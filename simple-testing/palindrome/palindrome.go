@@ -50,18 +50,19 @@ func intro() {
 }
 
 func prompt() {
-	fmt.Print("-> ")
+	fmt.Print("-) ")
 }
 
 func isPalindrome(s string) (bool, string) {
 	if strings.TrimSpace(s) == "" {
 		return false, "Empty string"
 	}
-	l := len(s)
+	str := strings.ToLower(s)
+	l := len(str)
 	for i := 0; i < l/2; i++ {
-		if s[i] != s[l-i-1] {
+		if str[i] != str[l-i-1] {
 			return false, "Not Palindrome!"
 		}
 	}
-	return true, fmt.Sprintf("%s is a Palindrome!", s)
+	return true, fmt.Sprintf("%s is a Palindrome!", str)
 }
