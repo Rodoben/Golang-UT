@@ -26,7 +26,6 @@ func Test_application_routes(t *testing.T) {
 			t.Errorf("route %s is not registered", route.route)
 		}
 	}
-
 }
 
 func routeExists(testRoute, testMethod string, chiRoutes chi.Routes) bool {
