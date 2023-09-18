@@ -51,18 +51,18 @@ func TestLogin(t *testing.T) {
 			expected: http.StatusOK,
 			body:     "test@example.com",
 		},
-		// {
-		// 	name:     "Missing Email",
-		// 	request:  httptest.NewRequest("POST", "/fish", strings.NewReader("password=12345")),
-		// 	expected: http.StatusBadRequest,
-		// 	body:     "",
-		// },
-		// {
-		// 	name:     "Missing Password",
-		// 	request:  httptest.NewRequest("POST", "/login", strings.NewReader("email=test@example.com")),
-		// 	expected: http.StatusBadRequest,
-		// 	body:     "",
-		// },
+		{
+			name:     "Missing Email",
+			request:  httptest.NewRequest("POST", "/login", strings.NewReader("password=12345")),
+			expected: http.StatusOK,
+			body:     "failed validation",
+		},
+		{
+			name:     "Missing Password",
+			request:  httptest.NewRequest("POST", "/login", strings.NewReader("email=test@example.com")),
+			expected: http.StatusOK,
+			body:     "failed validation",
+		},
 	}
 
 	for _, tc := range testCases {
