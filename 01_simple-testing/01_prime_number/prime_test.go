@@ -20,7 +20,7 @@ func Test_IsPrime(t *testing.T) {
 
 	result, msg = isPrime(7)
 	if !result {
-		t.Errorf("with %d as a test parameter , got true, but expected false", 7)
+		t.Errorf("with %d as a test parameter , got false, but expected true", 7)
 	}
 	if msg != "7 is a prime number!" {
 		t.Error("wrong message returned:", msg)
