@@ -8,32 +8,31 @@ import (
 )
 
 func Test_application_handlers(t *testing.T) {
-	tests := []struct {
+	var testHandlers = []struct {
 		name               string
-		url                string
+		route              string
 		expectedStatusCode int
 	}{
-		{"home", "/", http.StatusOK},
-
-		{"404-not-found", "/fish", http.StatusNotFound},
+		{name: "sucess", route: "/", expectedStatusCode: http.StatusOK},
+		{name: "not-found", route: "/fish", expectedStatusCode: http.StatusNotFound},
 	}
-
 	var app application
-	routes := app.routes()
+	mux := app.routes()
 
-	ts := httptest.NewTLSServer(routes)
+	ts := httptest.NewTLSServer(mux)
 	defer ts.Close()
 	pathToTemplates = "./../../cmd/templates/"
-	for _, e := range tests {
-		resp, err := ts.Client().Get(ts.URL + e.url)
+	for _, test := range testHandlers {
+		resp, err := ts.Client().Get(ts.URL + test.route)
 		if err != nil {
 			t.Log(err)
 			t.Fatal(err)
 		}
 
-		if resp.StatusCode != e.expectedStatusCode {
-			t.Errorf("for %s: expected status %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
+		if resp.StatusCode != test.expectedStatusCode {
+			t.Errorf("for %s: expected status code %d, but got %d", test.name, test.expectedStatusCode, resp.StatusCode)
 		}
+
 	}
 
 }

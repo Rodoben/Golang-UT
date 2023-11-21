@@ -9,32 +9,33 @@ import (
 )
 
 func Test_application_routes(t *testing.T) {
-	var registered = []struct {
+	registedRoutes := []struct {
+		name   string
 		route  string
 		method string
 	}{
-
-		{route: "/", method: "GET"},
+		{name: "Route 1", route: "/", method: "GET"},
+		{name: "Route 2", route: "/login", method: "POST"},
+		{name: "Static Route", route: "/static/*", method: "GET"},
 	}
-
 	var app application
 	mux := app.routes()
 	chiRoutes := mux.(chi.Routes)
 
-	for _, route := range registered {
-		if !routeExists(route.route, route.method, chiRoutes) {
-			t.Errorf("route %s is not registered", route.route)
+	for _, route := range registedRoutes {
+		if !routeExist(route.route, route.method, chiRoutes) {
+			t.Errorf("%s route %s is not registered", route.name, route.route)
 		}
 	}
 }
 
-func routeExists(testRoute, testMethod string, chiRoutes chi.Routes) bool {
+func routeExist(testRoute, testMethod string, chiRoutes chi.Routes) bool {
 	found := false
-
 	_ = chi.Walk(chiRoutes, func(method, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		if strings.EqualFold(method, testMethod) && strings.EqualFold(route, testRoute) {
 			found = true
 		}
+
 		return nil
 	})
 	return found

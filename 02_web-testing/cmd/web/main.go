@@ -8,8 +8,9 @@ import (
 type application struct{}
 
 func main() {
-
+	// setup am app config, app will become the reciever for sharing information
 	app := application{}
+	// get application routes
 	mux := app.routes()
 
 	log.Println("Starting server on port 8080...")
