@@ -34,6 +34,7 @@ func (app *application) addIPToContext(next http.Handler) http.Handler {
 
 func getIP(r *http.Request) (string, error) {
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	fmt.Println("IP", ip)
 	if err != nil {
 		return "unknown", err
 	}

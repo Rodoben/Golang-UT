@@ -54,11 +54,11 @@ func Test_application_addIPToContext(t *testing.T) {
 func Test_ipFromContext(t *testing.T) {
 
 	var app application
-	var ctx = context.Background()
-	ctx = context.WithValue(ctx, contextUserKey, "whatever")
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, contextUserKey, "somekey")
 	ip := app.ipFromContext(ctx)
 
-	if !strings.EqualFold("whatever", ip) {
-		t.Error("wrong value retuend from context")
+	if !strings.EqualFold(ip, "somekey") {
+		t.Error("user-ip mismatch")
 	}
 }

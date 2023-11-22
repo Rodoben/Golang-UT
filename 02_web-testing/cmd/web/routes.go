@@ -8,7 +8,6 @@ import (
 )
 
 func (app *application) routes() http.Handler {
-
 	mux := chi.NewRouter()
 	mux.Use(middleware.Recoverer) // to recover if there is a panic
 	mux.Use(app.addIPToContext)
