@@ -18,7 +18,7 @@ func Test_application_routes(t *testing.T) {
 		{name: "Route 2", route: "/login", method: "POST"},
 		{name: "Static Route", route: "/static/*", method: "GET"},
 	}
-	var app application
+
 	mux := app.routes()
 	chiRoutes := mux.(chi.Routes)
 

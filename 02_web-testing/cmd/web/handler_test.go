@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,12 +18,12 @@ func Test_application_handlers(t *testing.T) {
 		{name: "sucess", route: "/", expectedStatusCode: http.StatusOK},
 		{name: "not-found", route: "/fish", expectedStatusCode: http.StatusNotFound},
 	}
-	var app application
+
 	mux := app.routes()
 
 	ts := httptest.NewTLSServer(mux)
 	defer ts.Close()
-	pathToTemplates = "./../../cmd/templates/"
+
 	for _, test := range testHandlers {
 		resp, err := ts.Client().Get(ts.URL + test.route)
 		if err != nil {
@@ -105,5 +107,81 @@ func TestLogin1(t *testing.T) {
 	expectedResponseBody := "test@example.com"
 	if w.Body.String() != expectedResponseBody {
 		t.Errorf("Expected response body %s, but got %s", expectedResponseBody, w.Body.String())
+	}
+}
+func Test_AppHome(t *testing.T) {
+	// create a request
+	req, _ := http.NewRequest("GET", "/", nil)
+	req = addContextAndSessionToRequest(req, app)
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(app.Home)
+	handler.ServeHTTP(rr, req)
+	//check status code
+	if rr.Code != http.StatusOK {
+		t.Errorf("TestAppHome returned wrong status code; expected 200 but got %d", rr.Code)
+	}
+
+	body, _ := io.ReadAll(rr.Body)
+	if !strings.Contains(string(body), `<small>Your request came from Session:`) {
+		t.Error("did not find the correct text in html")
+	}
+}
+
+func addContextAndSessionToRequest(req *http.Request, app application) *http.Request {
+	req = req.WithContext(getCtx(req))
+	ctx, _ := app.Session.Load(req.Context(), req.Header.Get("X-Session"))
+	return req.WithContext(ctx)
+}
+
+func getCtx(req *http.Request) context.Context {
+	return context.WithValue(req.Context(), contextUserKey, "test")
+}
+
+func Test_Table_AppHome(t *testing.T) {
+
+	var tests = []struct {
+		name         string
+		putInSession string
+		expectedHTML string
+	}{
+		{name: "first visit", putInSession: "", expectedHTML: "<small>Your request came from Session:"},
+		{name: "second visit", putInSession: "hello,world!", expectedHTML: "<small>Your request came from Session: hello,world!"},
+	}
+
+	for _, test := range tests {
+		req, _ := http.NewRequest("GET", "/", nil)
+		req = addContextAndSessionToRequest(req, app)
+		app.Session.Destroy(req.Context())
+
+		if test.putInSession != "" {
+			app.Session.Put(req.Context(), "test", test.putInSession)
+		}
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(app.Home)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("TestAppHome returned wrong status code; expected 200 but got %d", rr.Code)
+		}
+
+		body, _ := io.ReadAll(rr.Body)
+		if !strings.Contains(string(body), test.expectedHTML) {
+			t.Error("did not find the correct text in html")
+		}
+	}
+
+}
+
+func Test_App_renderWithBadTemplate(t *testing.T) {
+	pathToTemplates = "./testData/"
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	req = addContextAndSessionToRequest(req, app)
+	rr := httptest.NewRecorder()
+	err := app.render(rr, req, "bad.page.gohtml", &TemplateData{})
+	if err == nil {
+		t.Error("expected error from bad template, burt not got one")
 	}
 }
