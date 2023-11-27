@@ -24,7 +24,6 @@ func (app *application) Home(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) Profile(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("profile render")
 	_ = app.render(w, r, "profile.page.gohtml", &TemplateData{})
 }
 

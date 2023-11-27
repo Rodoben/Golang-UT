@@ -16,6 +16,7 @@ func Test_application_routes(t *testing.T) {
 	}{
 		{name: "Route 1", route: "/", method: "GET"},
 		{name: "Route 2", route: "/login", method: "POST"},
+		{name: "Route 3", route: "/user/profile", method: "GET"},
 		{name: "Static Route", route: "/static/*", method: "GET"},
 	}
 
@@ -35,7 +36,6 @@ func routeExist(testRoute, testMethod string, chiRoutes chi.Routes) bool {
 		if strings.EqualFold(method, testMethod) && strings.EqualFold(route, testRoute) {
 			found = true
 		}
-
 		return nil
 	})
 	return found

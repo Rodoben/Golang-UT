@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,12 +14,15 @@ import (
 
 func Test_application_handlers(t *testing.T) {
 	var testHandlers = []struct {
-		name               string
-		route              string
-		expectedStatusCode int
+		name                    string
+		route                   string
+		expectedStatusCode      int
+		expectedUrl             string
+		expectedFirstStatusCode int
 	}{
-		{name: "sucess", route: "/", expectedStatusCode: http.StatusOK},
-		{name: "not-found", route: "/fish", expectedStatusCode: http.StatusNotFound},
+		{name: "home", route: "/", expectedStatusCode: http.StatusOK, expectedUrl: "/", expectedFirstStatusCode: http.StatusOK},
+		{name: "not-found", route: "/fish", expectedStatusCode: http.StatusNotFound, expectedUrl: "/fish", expectedFirstStatusCode: http.StatusNotFound},
+		{name: "profile", route: "/user/profile", expectedStatusCode: http.StatusOK, expectedUrl: "/", expectedFirstStatusCode: http.StatusTemporaryRedirect},
 	}
 
 	mux := app.routes()
@@ -25,17 +30,35 @@ func Test_application_handlers(t *testing.T) {
 	ts := httptest.NewTLSServer(mux)
 	defer ts.Close()
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{
+		Transport: tr,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 	for _, test := range testHandlers {
+		fmt.Println("_______", ts.URL+test.route)
 		resp, err := ts.Client().Get(ts.URL + test.route)
 		if err != nil {
 			t.Log(err)
 			t.Fatal(err)
 		}
-
+		fmt.Println("_______", resp.Body)
 		if resp.StatusCode != test.expectedStatusCode {
 			t.Errorf("for %s: expected status code %d, but got %d", test.name, test.expectedStatusCode, resp.StatusCode)
 		}
 
+		if resp.Request.URL.Path != test.expectedUrl {
+			t.Errorf("for %s: expected final url %s, but got %s", test.name, test.expectedUrl, resp.Request.URL.Path)
+		}
+
+		resp2, _ := client.Get(ts.URL + test.route)
+		if resp2.StatusCode != test.expectedFirstStatusCode {
+			t.Errorf("%s: expected first returned status code to be %d but got %d", test.name, test.expectedFirstStatusCode, resp2.StatusCode)
+		}
 	}
 
 }
