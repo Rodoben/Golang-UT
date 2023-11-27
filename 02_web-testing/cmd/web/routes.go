@@ -14,6 +14,7 @@ func (app *application) routes() http.Handler {
 	mux.Use(app.Session.LoadAndSave) // to use the session in middleware, persisting data
 	mux.Get("/", app.Home)
 	mux.Post("/login", app.Login)
+	mux.Get("/user/profile", app.Profile)
 	fileServer := http.FileServer(http.Dir("/static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 	return mux

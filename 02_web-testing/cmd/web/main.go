@@ -1,17 +1,19 @@
 package main
 
 import (
-	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
+	"web-testing/pkg/data"
+	"web-testing/pkg/db"
 
 	"github.com/alexedwards/scs/v2"
 )
 
 type application struct {
 	Session *scs.SessionManager
-	DB      *sql.DB
+	DB      db.PostgresConn
 	DSN     string
 }
 
@@ -27,9 +29,8 @@ const (
 )
 
 func main() {
-
+	gob.Register(data.User{})
 	dsn := fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=%s timezone=%s connect_timeout=%v", host, port, user, password, dbname, sslmode, timezone, connect_timeout)
-	fmt.Println(dsn)
 	//	setup an app config, app will become the reciever for sharing information
 	app := application{
 		Session: getSession(),
@@ -37,17 +38,16 @@ func main() {
 	}
 	// flag.StringVar(&app.DSN, "dsn", "host=localhost port=5432 user=postgres password=postgres dbname=users sslmode=disable timezone=UTC connect_timeout=5", "Posgtres connection")
 	// flag.Parse()
-	fmt.Println(app.DSN)
 	conn, err := app.connectToDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
-	app.DB = conn
-
+	defer conn.Close()
+	app.DB = db.PostgresConn{DB: conn}
 	// get application routes
 	mux := app.routes()
 	// get a session manager
-	//app.Session = getSession()
+	// app.Session = getSession()
 	log.Println("Starting server on port 8080...")
 	err = http.ListenAndServe(":8080", mux)
 	if err != nil {

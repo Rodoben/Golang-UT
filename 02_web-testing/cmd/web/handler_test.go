@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -39,76 +40,6 @@ func Test_application_handlers(t *testing.T) {
 
 }
 
-func TestLogin(t *testing.T) {
-	testCases := []struct {
-		name     string
-		request  *http.Request
-		expected int
-		body     string
-	}{
-		{
-			name:     "Valid Request",
-			request:  httptest.NewRequest("POST", "/login", strings.NewReader("email=test@example.com&password=12345")),
-			expected: http.StatusOK,
-			body:     "test@example.com",
-		},
-		{
-			name:     "Missing Email",
-			request:  httptest.NewRequest("POST", "/login", strings.NewReader("password=12345")),
-			expected: http.StatusOK,
-			body:     "failed validation",
-		},
-		{
-			name:     "Missing Password",
-			request:  httptest.NewRequest("POST", "/login", strings.NewReader("email=test@example.com")),
-			expected: http.StatusOK,
-			body:     "failed validation",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-
-			tc.request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-			w := httptest.NewRecorder()
-			app := &application{} // Create your application instance here.
-
-			app.Login(w, tc.request)
-			if w.Code != tc.expected {
-				t.Errorf("expected status code %d, got %d", tc.expected, w.Code)
-			}
-
-			if w.Body.String() != tc.body {
-				t.Errorf("expected response body %s, got %s", tc.body, w.Body.String())
-			}
-		})
-	}
-}
-
-func TestLogin1(t *testing.T) {
-	// Create a request with form data.
-	requestBody := "email=test@example.com&password=secretpassword"
-	req := httptest.NewRequest("POST", "/login", strings.NewReader(requestBody))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-
-	// Create an instance of your application.
-	app := &application{} // Replace with the actual initialization.
-
-	// Call the Login method.
-	app.Login(w, req)
-
-	// Check the response.
-	if w.Code != http.StatusOK {
-		t.Errorf("Expected status code %d, but got %d", http.StatusOK, w.Code)
-	}
-
-	expectedResponseBody := "test@example.com"
-	if w.Body.String() != expectedResponseBody {
-		t.Errorf("Expected response body %s, but got %s", expectedResponseBody, w.Body.String())
-	}
-}
 func Test_AppHome(t *testing.T) {
 	// create a request
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -124,6 +55,21 @@ func Test_AppHome(t *testing.T) {
 
 	body, _ := io.ReadAll(rr.Body)
 	if !strings.Contains(string(body), `<small>Your request came from Session:`) {
+		t.Error("did not find the correct text in html")
+	}
+}
+
+func Test_AppProfile(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	req = addContextAndSessionToRequest(req, app)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(app.Profile)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Errorf("TestAppProfile returned wrong status code; expected 200 but got %d", rr.Code)
+	}
+	body, _ := io.ReadAll(rr.Body)
+	if !strings.Contains(string(body), `<h1 class="mt-3">User Profile`) {
 		t.Error("did not find the correct text in html")
 	}
 }
@@ -183,5 +129,81 @@ func Test_App_renderWithBadTemplate(t *testing.T) {
 	err := app.render(rr, req, "bad.page.gohtml", &TemplateData{})
 	if err == nil {
 		t.Error("expected error from bad template, burt not got one")
+	}
+}
+
+func Test_Login(t *testing.T) {
+	testLogin := []struct {
+		name               string
+		postedData         Form
+		expectedStatusCode int
+		expectedLocation   string
+	}{
+		{
+			name: "Missing form data",
+			postedData: Form{Data: url.Values{
+				"email":    {""},
+				"password": {""},
+			}},
+			expectedStatusCode: 303,
+			expectedLocation:   "/",
+		},
+		{
+			name: "Bad credentials",
+			postedData: Form{Data: url.Values{
+				"email":    {"admin@admin.com"},
+				"password": {"secret"},
+			}},
+			expectedStatusCode: 303,
+			expectedLocation:   "/",
+		},
+		{
+			name: "User not found",
+			postedData: Form{Data: url.Values{
+				"email":    {"admin2@example.com"},
+				"password": {"secret"},
+			}},
+			expectedStatusCode: 303,
+			expectedLocation:   "/",
+		},
+		{
+			name: "authentication",
+			postedData: Form{Data: url.Values{
+				"email":    {"admin@example.com"},
+				"password": {"secrett"},
+			}},
+			expectedStatusCode: 303,
+			expectedLocation:   "/",
+		},
+		{
+			name: "valid login",
+			postedData: Form{Data: url.Values{
+				"email":    {"admin@example.com"},
+				"password": {"secret"},
+			}},
+			expectedStatusCode: 303,
+			expectedLocation:   "/user/profile",
+		},
+	}
+
+	for _, test := range testLogin {
+		req, _ := http.NewRequest("POST", "/login", strings.NewReader(test.postedData.Data.Encode()))
+		req = addContextAndSessionToRequest(req, app)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(app.Login)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != test.expectedStatusCode {
+			t.Errorf("%s: returned wrong status code; expected %d, but got %d", test.name, test.expectedStatusCode, rr.Code)
+		}
+		actualLocation, err := rr.Result().Location()
+		if err == nil {
+			if actualLocation.String() != test.expectedLocation {
+				t.Errorf("%s: expected %s got %s", test.name, test.expectedLocation, actualLocation)
+			}
+		}
+		t.Log("location:", actualLocation.String())
+
 	}
 }
