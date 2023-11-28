@@ -6,14 +6,15 @@ import (
 	"log"
 	"net/http"
 	"web-testing/pkg/data"
-	"web-testing/pkg/db"
+	"web-testing/pkg/repository"
+	"web-testing/pkg/repository/dbrepo"
 
 	"github.com/alexedwards/scs/v2"
 )
 
 type application struct {
 	Session *scs.SessionManager
-	DB      db.PostgresConn
+	DB      repository.DatabaseRepo
 	DSN     string
 }
 
@@ -43,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.Close()
-	app.DB = db.PostgresConn{DB: conn}
+	app.DB = &dbrepo.PostgresDBRepo{DB: conn}
 	// get application routes
 	mux := app.routes()
 	// get a session manager

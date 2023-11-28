@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
-	"web-testing/pkg/db"
+
+	"web-testing/pkg/repository/dbrepo"
 )
 
 // this file runs before other _test.go files.
@@ -15,11 +15,7 @@ func TestMain(m *testing.M) {
 	pathToTemplates = "./../../cmd/templates/"
 	app.Session = getSession()
 	app.DSN = fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=%s timezone=%s connect_timeout=%v", host, port, user, password, dbname, sslmode, timezone, connect_timeout)
-	conn, err := app.connectToDatabase()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
-	app.DB = db.PostgresConn{DB: conn}
+
+	app.DB = &dbrepo.TestDBRepo{}
 	os.Exit(m.Run())
 }
