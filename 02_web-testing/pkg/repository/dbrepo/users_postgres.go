@@ -218,21 +218,17 @@ func (m *PostgresDBRepo) ResetPassword(id int, password string) error {
 func (m *PostgresDBRepo) InsertUserImage(i data.UserImage) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
 	defer cancel()
-
 	var newID int
-	stmt := `insert into user_images (user_id, fileName, created_at, updated_at)
+	stmt := `insert into user_images (user_id, file_name, created_at, updated_at)
 		values ($1, $2, $3, $4) returning id`
-
 	err := m.DB.QueryRowContext(ctx, stmt,
 		i.UserID,
 		i.FileName,
 		time.Now(),
 		time.Now(),
 	).Scan(&newID)
-
 	if err != nil {
 		return 0, err
 	}
-
 	return newID, nil
 }

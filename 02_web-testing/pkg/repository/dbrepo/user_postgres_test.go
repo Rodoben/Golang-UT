@@ -1,3 +1,5 @@
+//go:build integration
+
 package dbrepo
 
 import (
@@ -248,4 +250,102 @@ func TestPostgresDBRepo_Table_GetUserByEmail(t *testing.T) {
 
 	}
 
+}
+
+func TestPostgresDBRepo_Table_Update(t *testing.T) {
+	user, err := testRepo.GetUser(1)
+	if err != nil {
+		t.Error("User not found")
+	}
+	user.FirstName = "Ronald"
+	user.LastName = "Benjamin"
+
+	updatedUser := user
+
+	updateUsers := []struct {
+		name  string
+		input data.User
+	}{
+		{name: "success", input: *updatedUser},
+	}
+	for _, v := range updateUsers {
+		err := testRepo.UpdateUser(v.input)
+
+		if err != nil {
+			t.Errorf("update filed %s", err)
+		}
+	}
+}
+
+func Test_Deleteuser(t *testing.T) {
+	testDelete := []struct {
+		name  string
+		input int
+	}{
+		{name: "Success", input: 1},
+	}
+
+	for _, v := range testDelete {
+		err := testRepo.DeleteUser(v.input)
+		if err != nil {
+			t.Errorf("with the given input %d, got error:%s", v.input, err)
+		}
+	}
+}
+
+func Test_ResetPassword(t *testing.T) {
+	testResetPasswords := []struct {
+		name     string
+		id       int
+		password string
+	}{
+		{name: "Success", id: 1, password: "ronald"},
+	}
+
+	for _, v := range testResetPasswords {
+		err := testRepo.ResetPassword(v.id, v.password)
+		if err != nil {
+			t.Errorf("with the given input %d, got error:%s", v.id, err)
+		}
+	}
+}
+
+func TestPostgresDBRepoInsertUserImage(t *testing.T) {
+	var image data.UserImage
+	image.UserID = 3
+	image.FileName = "test.jpg"
+	image.CreatedAt = time.Now()
+	image.UpdatedAt = time.Now()
+
+	image2 := data.UserImage{
+		UserID:    2,
+		FileName:  "test.jpg",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	testInsertUserImage := []struct {
+		name          string
+		userImageData data.UserImage
+		response      int
+	}{
+		{name: "image1", userImageData: image, response: 1},
+		{name: "image2", userImageData: image2, response: 2},
+	}
+	for _, v := range testInsertUserImage {
+		newID, err := testRepo.InsertUserImage(v.userImageData)
+		if err != nil {
+			t.Error("inserting user image failed:", err)
+		}
+
+		if newID != v.response {
+			t.Error("got wrong id for image; should be 1, but got", newID)
+		}
+
+	}
+
+	image.UserID = 100
+	_, err := testRepo.InsertUserImage(image)
+	if err == nil {
+		t.Error("inserted a user image with non-existent user id")
+	}
 }
