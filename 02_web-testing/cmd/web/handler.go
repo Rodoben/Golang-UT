@@ -3,9 +3,13 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 	"web-testing/pkg/data"
 )
@@ -48,6 +52,11 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, t string,
 	td.Error = app.Session.PopString(r.Context(), "error")
 
 	td.Flash = app.Session.PopString(r.Context(), "flash")
+
+	if app.Session.Exists(r.Context(), "user") {
+		td.User = app.Session.Get(r.Context(), "user").(data.User)
+		fmt.Println(td.User.ProfilePic)
+	}
 
 	// execute the template, passing it data, if any
 	fmt.Println(" render", t)
@@ -111,4 +120,83 @@ func (app *application) authenticate(r *http.Request, user *data.User, password 
 	}
 	app.Session.Put(r.Context(), "user", user)
 	return true
+}
+
+func (app *application) UploadProfilePic(w http.ResponseWriter, r *http.Request) {
+	// call a function that extracts a file from an upload
+	files, err := app.UploadFiles(r, "./static/img")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	// get the user from the session
+
+	user := app.Session.Get(r.Context(), "user").(data.User)
+	// create a varibale of type data.userImage
+	var i = data.UserImage{
+		UserID:   user.ID,
+		FileName: files[0].OriginalFileName,
+	}
+	// insert the user image into user_image
+	_, err = app.DB.InsertUserImage(i)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// refresh the sessional varibale "user"
+
+	updatedUser, err := app.DB.GetUser(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	app.Session.Put(r.Context(), "user", updatedUser)
+	// redirect back to profile page
+
+	http.Redirect(w, r, "/user/profile", http.StatusSeeOther)
+}
+
+type UploadedFile struct {
+	OriginalFileName string
+	FileSize         int64
+}
+
+func (app *application) UploadFiles(r *http.Request, uploadDir string) ([]*UploadedFile, error) {
+	var uploadedFiles []*UploadedFile
+	err := r.ParseMultipartForm(int64(1024 * 1024 * 5))
+	if err != nil {
+		return nil, fmt.Errorf("uploaded file is to big and mus be less than %d bytes", 1024*1024*5)
+	}
+	for _, fHeaders := range r.MultipartForm.File {
+		for _, hdr := range fHeaders {
+			x, x1 := app.uploadMultiPart(uploadedFiles, hdr, uploadDir)
+			uploadedFiles, _ = x, x1
+		}
+	}
+	return uploadedFiles, nil
+}
+
+func (app *application) uploadMultiPart(uploadedFiles []*UploadedFile, hdr *multipart.FileHeader, uploadDir string) ([]*UploadedFile, error) {
+	var uploadedFile UploadedFile
+	infile, err := hdr.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer infile.Close()
+	uploadedFile.OriginalFileName = hdr.Filename
+
+	var outfile *os.File
+	defer outfile.Close()
+
+	if outfile, err = os.Create(filepath.Join(uploadDir, uploadedFile.OriginalFileName)); err != nil {
+		return nil, err
+	} else {
+		filesize, err := io.Copy(outfile, infile)
+		if err != nil {
+			return nil, err
+		}
+		uploadedFile.FileSize = filesize
+	}
+	uploadedFiles = append(uploadedFiles, &uploadedFile)
+	return uploadedFiles, nil
 }
