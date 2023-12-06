@@ -169,8 +169,10 @@ func (app *application) UploadFiles(r *http.Request, uploadDir string) ([]*Uploa
 	}
 	for _, fHeaders := range r.MultipartForm.File {
 		for _, hdr := range fHeaders {
-			x, x1 := app.uploadMultiPart(uploadedFiles, hdr, uploadDir)
-			uploadedFiles, _ = x, x1
+			uploadedFiles, err = app.uploadMultiPart(uploadedFiles, hdr, uploadDir)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return uploadedFiles, nil

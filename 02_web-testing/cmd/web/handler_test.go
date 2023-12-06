@@ -4,11 +4,17 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -60,9 +66,7 @@ func Test_application_handlers(t *testing.T) {
 			t.Errorf("%s: expected first returned status code to be %d but got %d", test.name, test.expectedFirstStatusCode, resp2.StatusCode)
 		}
 	}
-
 }
-
 func Test_AppHome(t *testing.T) {
 	// create a request
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -81,7 +85,6 @@ func Test_AppHome(t *testing.T) {
 		t.Error("did not find the correct text in html")
 	}
 }
-
 func Test_AppProfile(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	req = addContextAndSessionToRequest(req, app)
@@ -96,17 +99,14 @@ func Test_AppProfile(t *testing.T) {
 		t.Error("did not find the correct text in html")
 	}
 }
-
 func addContextAndSessionToRequest(req *http.Request, app application) *http.Request {
 	req = req.WithContext(getCtx(req))
 	ctx, _ := app.Session.Load(req.Context(), req.Header.Get("X-Session"))
 	return req.WithContext(ctx)
 }
-
 func getCtx(req *http.Request) context.Context {
 	return context.WithValue(req.Context(), contextUserKey, "test")
 }
-
 func Test_Table_AppHome(t *testing.T) {
 
 	var tests = []struct {
@@ -140,9 +140,7 @@ func Test_Table_AppHome(t *testing.T) {
 			t.Error("did not find the correct text in html")
 		}
 	}
-
 }
-
 func Test_App_renderWithBadTemplate(t *testing.T) {
 	pathToTemplates = "./testData/"
 
@@ -154,7 +152,6 @@ func Test_App_renderWithBadTemplate(t *testing.T) {
 		t.Error("expected error from bad template, burt not got one")
 	}
 }
-
 func Test_Login(t *testing.T) {
 	testLogin := []struct {
 		name               string
@@ -229,4 +226,69 @@ func Test_Login(t *testing.T) {
 		t.Log("location:", actualLocation.String())
 
 	}
+}
+
+func Test_UploaduserImage(t *testing.T) {
+	// set up pipe
+	pr, pw := io.Pipe()
+	// create a new writer of type *io.Writer
+	writer := multipart.NewWriter(pw)
+
+	// create a waitgroup and add 1 to it
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	// simulate uploading a file using a go routine and our writer
+	go simulateImageUpload("./testdata/img.png", writer, t, wg)
+
+	// read from the pipe which receives data
+	request := httptest.NewRequest("POST", "/", pr)
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+
+	// call app.uploadedFiles
+	uploadedFiles, err := app.UploadFiles(request, "./testdata/uploads/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if _, err := os.Stat(fmt.Sprintf("./testdata/uploads/%s", uploadedFiles[0].OriginalFileName)); os.IsNotExist(err) {
+		t.Errorf("expected file to exist: %s", err.Error())
+	}
+
+	// clean up
+	_ = os.Remove(fmt.Sprintf("./testdata/uploads/%s", uploadedFiles[0].OriginalFileName))
+	wg.Wait()
+}
+
+func simulateImageUpload(fileToUpload string, writer *multipart.Writer, t *testing.T, wg *sync.WaitGroup) {
+	defer writer.Close()
+	defer wg.Done()
+
+	// create the form data filed 'file' with value being filename
+	part, err := writer.CreateFormFile("file", path.Base(fileToUpload))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	// open the actual file
+	f, err := os.Open(fileToUpload)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer f.Close()
+
+	// decode the image
+	img, _, err := image.Decode(f)
+	if err != nil {
+		t.Error("error decoding image:", err)
+	}
+
+	// write the png to our io.Writer
+	err = png.Encode(part, img)
+	if err != nil {
+		t.Error(err)
+	}
+
 }
