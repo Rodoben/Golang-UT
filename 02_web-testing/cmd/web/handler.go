@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	pathToTemplates = "cmd/templates/"
+	pathToTemplates = "./templates/"
 	uploadPath      = "./static/img"
 )
 
