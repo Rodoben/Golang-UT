@@ -13,7 +13,8 @@ import (
 func openDB(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Fatalf("error opening the fb connection: %s", err)
+		return nil, err
+		//log.Fatalf("error opening the db connection: %s", err)
 	}
 	err = db.Ping()
 	if err != nil {

@@ -21,14 +21,17 @@ const (
 )
 
 type application struct {
-	DSN string
-	DB  repository.DatabaseRepo
+	DSN       string
+	DB        repository.DatabaseRepo
+	Domain    string
+	JWTSecret string
 }
 
 func main() {
 	var app application
 	dsn := fmt.Sprintf("host=%s port=%v user=%s password=%s dbname=%s sslmode=%s timezone=%s connect_timeout=%v", host, port, user, password, dbname, sslmode, timezone, connect_timeout)
 	app.DSN = dsn
+	app.Domain = `"jwt-secret", "2dce505d96a53c5768052ee90f3df2055657518dad489160df9913f66042e160", "signing secret"`
 	conn, err := app.connectToDatabase()
 	if err != nil {
 		log.Println("Unable to connect to databse")
