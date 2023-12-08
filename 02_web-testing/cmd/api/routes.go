@@ -10,6 +10,6 @@ import (
 func (app *application) Routes() http.Handler {
 	mux := chi.NewRouter()
 	mux.Use(middleware.Recoverer)
-	mux.Get("/auth", app.Authenticate)
+	mux.Post("/auth", app.Authenticate)
 	return mux
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,12 +22,14 @@ func (app *application) Authenticate(w http.ResponseWriter, req *http.Request) {
 		app.errorJSON(w, errors.New("Unauthorized1"), http.StatusUnauthorized)
 		return
 	}
+	fmt.Println("1")
 	// look up the user by email
 	user, err := app.DB.GetUserByEmail(data.UserName)
 	if err != nil {
 		app.errorJSON(w, errors.New("Unauthorized2"), http.StatusUnauthorized)
 		return
 	}
+	fmt.Println("2")
 	// checkpassword
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(data.Password))
 	if err != nil {
@@ -34,13 +37,13 @@ func (app *application) Authenticate(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	//generate tokens
-
+	fmt.Println("3")
 	tokenpairs, err := app.generateTokenPair(user)
 	if err != nil {
 		app.errorJSON(w, errors.New("Unauthorized4"), http.StatusUnauthorized)
 		return
 	}
-
+	fmt.Println("4")
 	//send token to user
 	_ = app.writeJSON(w, http.StatusOK, tokenpairs)
 }
