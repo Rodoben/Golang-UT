@@ -13,7 +13,7 @@ type Credentails struct {
 	Password string `json:"password"`
 }
 
-func (app *application) Authenticate(w http.ResponseWriter, req *http.Request) {
+func (app *application) authenticate(w http.ResponseWriter, req *http.Request) {
 
 	// read json payload
 	var data Credentails
@@ -46,4 +46,27 @@ func (app *application) Authenticate(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("4")
 	//send token to user
 	_ = app.writeJSON(w, http.StatusOK, tokenpairs)
+}
+
+func (app *application) refreshToken(w http.ResponseWriter, req *http.Request) {
+
+}
+
+func (app *application) allUser(w http.ResponseWriter, req *http.Request) {
+
+}
+func (app *application) getOneUser(w http.ResponseWriter, req *http.Request) {
+
+}
+
+func (app *application) insertUser(w http.ResponseWriter, req *http.Request) {
+
+}
+
+func (app *application) deleteUser(w http.ResponseWriter, req *http.Request) {
+
+}
+
+func (app *application) updateUser(w http.ResponseWriter, req *http.Request) {
+
 }

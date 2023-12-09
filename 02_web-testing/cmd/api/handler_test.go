@@ -25,7 +25,7 @@ func Test_app_Authentication(t *testing.T) {
 		reader := strings.NewReader(test.requestBody)
 		req, _ := http.NewRequest(http.MethodPost, "/auth", reader)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(app.Authenticate)
+		handler := http.HandlerFunc(app.authenticate)
 		handler.ServeHTTP(rr, req)
 
 		if rr.Code != test.expectedCode {

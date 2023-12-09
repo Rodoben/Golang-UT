@@ -14,7 +14,13 @@ func Test_route(t *testing.T) {
 		method string
 		route  string
 	}{
-		{name: "Auth route", method: http.MethodPost, route: "/auth"},
+		{name: "Auth route", method: http.MethodPost, route: "/authentication"},
+		{name: "refresh route", method: http.MethodPost, route: "/refresh-token"},
+		{name: "AllUser route", method: http.MethodGet, route: "/users/"},
+		{name: "GetUser route", method: http.MethodGet, route: "/users/{userID}"},
+		{name: "Delete route", method: http.MethodDelete, route: "/users/{userID}"},
+		{name: "Put route", method: http.MethodPut, route: "/users/"},
+		{name: "Patch route", method: http.MethodPatch, route: "/users/"},
 	}
 
 	mux := app.Routes()
