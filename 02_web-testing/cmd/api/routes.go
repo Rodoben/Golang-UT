@@ -17,7 +17,7 @@ func (app *application) Routes() http.Handler {
 	mux.Route("/users", func(mux chi.Router) {
 		mux.Use(app.authRequired)
 		mux.Get("/", app.allUser)
-		mux.Get("/{userID}", app.getOneUser)
+		mux.Get("/{userID}", app.GetOneUser)
 		mux.Put("/", app.insertUser)
 		mux.Patch("/", app.updateUser)
 		mux.Delete("/{userID}", app.deleteUser)
