@@ -5,6 +5,8 @@ import (
 	"web-testing/pkg/data"
 )
 
+//go:generate mockgen -destination=./mocks/mockrunner.go -package=mocks web-testing/pkg/repository DatabaseRepo
+
 type DatabaseRepo interface {
 	Connection() *sql.DB
 	AllUsers() ([]*data.User, error)
