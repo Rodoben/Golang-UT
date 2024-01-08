@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"simple-testing/06_queue/queue"
+	"tdd/02_queue_testify/queue"
 )
 
 func main() {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"simple-testing/05_stack/stack"
+	"tdd/01_stack_unit_test/stack"
 )
 
 func main() {
