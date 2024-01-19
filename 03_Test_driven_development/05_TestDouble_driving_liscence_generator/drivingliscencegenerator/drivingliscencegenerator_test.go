@@ -1,6 +1,7 @@
 package drivingliscencegenerator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -9,7 +10,11 @@ import (
 type (
 	UnderAgeApplicant       struct{}
 	LiscenceHolderApplicant struct{}
-	SpyLogger               struct {
+	ValidApplicant          struct {
+		initials string
+		dob      string
+	}
+	SpyLogger struct {
 		Callcount   int
 		Lastmessage string
 	}
@@ -22,6 +27,12 @@ func (u UnderAgeApplicant) IsAbove18() bool {
 func (u UnderAgeApplicant) HoldsLiscence() bool {
 	return false
 }
+func (u UnderAgeApplicant) GetInitials() string {
+	return ""
+}
+func (u UnderAgeApplicant) GetDOB() string {
+	return ""
+}
 
 func (l LiscenceHolderApplicant) IsAbove18() bool {
 	return true
@@ -29,6 +40,25 @@ func (l LiscenceHolderApplicant) IsAbove18() bool {
 
 func (l LiscenceHolderApplicant) HoldsLiscence() bool {
 	return true
+}
+func (l LiscenceHolderApplicant) GetInitials() string {
+	return ""
+}
+func (l LiscenceHolderApplicant) GetDOB() string {
+	return ""
+}
+func (v ValidApplicant) IsAbove18() bool {
+	return true
+}
+
+func (v ValidApplicant) HoldsLiscence() bool {
+	return false
+}
+func (v ValidApplicant) GetInitials() string {
+	return v.initials
+}
+func (v ValidApplicant) GetDOB() string {
+	return v.dob
 }
 
 func (s *SpyLogger) LogStuff(v string) {
@@ -66,4 +96,16 @@ func (s *DrivingLiscenceSuite) TestNoSecondLiscence() {
 
 	s.Equal(1, l.Callcount)
 	s.Contains(l.Lastmessage, "Duplicate")
+}
+
+func (s *DrivingLiscenceSuite) TestLiscenceGenerator() {
+	a := ValidApplicant{initials: "JH", dob: "07051997"}
+	l := &SpyLogger{}
+
+	lg := NewDrivingLiscenceNumberGenerator(l)
+	ln, err := lg.Generate(a)
+	fmt.Println(ln)
+	s.NoError(err)
+	s.Equal("JH07051997", ln)
+
 }
