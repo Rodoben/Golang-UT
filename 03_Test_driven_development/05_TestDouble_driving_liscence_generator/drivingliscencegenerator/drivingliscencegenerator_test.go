@@ -2,6 +2,7 @@ package drivingliscencegenerator
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -10,6 +11,7 @@ import (
 type (
 	UnderAgeApplicant       struct{}
 	LiscenceHolderApplicant struct{}
+	FakeRand                struct{}
 	ValidApplicant          struct {
 		initials string
 		dob      string
@@ -65,6 +67,10 @@ func (s *SpyLogger) LogStuff(v string) {
 	s.Callcount++
 	s.Lastmessage = v
 }
+func (f FakeRand) GetRandomNumbers(len int) string {
+	fmt.Println(strings.Repeat("0", len))
+	return strings.Repeat("0", len)
+}
 
 type DrivingLiscenceSuite struct {
 	suite.Suite
@@ -77,7 +83,8 @@ func TestDrivingLiscenceSuite(t *testing.T) {
 func (s *DrivingLiscenceSuite) TestUnderAgeApplicant() {
 	a := UnderAgeApplicant{}
 	l := &SpyLogger{}
-	lg := NewDrivingLiscenceNumberGenerator(l)
+	r := FakeRand{}
+	lg := NewDrivingLiscenceNumberGenerator(l, r)
 	_, err := lg.Generate(a)
 	s.Error(err)
 	s.Contains(err.Error(), "Underaged")
@@ -89,7 +96,8 @@ func (s *DrivingLiscenceSuite) TestUnderAgeApplicant() {
 func (s *DrivingLiscenceSuite) TestNoSecondLiscence() {
 	a := LiscenceHolderApplicant{}
 	l := &SpyLogger{}
-	lg := NewDrivingLiscenceNumberGenerator(l)
+	r := FakeRand{}
+	lg := NewDrivingLiscenceNumberGenerator(l, r)
 	_, err := lg.Generate(a)
 	s.Error(err)
 	s.Contains(err.Error(), "Duplicate")
@@ -101,11 +109,22 @@ func (s *DrivingLiscenceSuite) TestNoSecondLiscence() {
 func (s *DrivingLiscenceSuite) TestLiscenceGenerator() {
 	a := ValidApplicant{initials: "JH", dob: "07051997"}
 	l := &SpyLogger{}
-
-	lg := NewDrivingLiscenceNumberGenerator(l)
+	r := FakeRand{}
+	lg := NewDrivingLiscenceNumberGenerator(l, r)
 	ln, err := lg.Generate(a)
-	fmt.Println(ln)
+
 	s.NoError(err)
-	s.Equal("JH07051997", ln)
+	s.Equal("JH07051997000000", ln)
+
+}
+func (s *DrivingLiscenceSuite) TestLiscenceGeneratorShorterInitials() {
+	a := ValidApplicant{initials: "JH", dob: "07051997"}
+	l := &SpyLogger{}
+	r := FakeRand{}
+	lg := NewDrivingLiscenceNumberGenerator(l, r)
+	ln, err := lg.Generate(a)
+
+	s.NoError(err)
+	s.Equal("JH07051997000000", ln)
 
 }

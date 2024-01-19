@@ -12,16 +12,20 @@ type (
 		GetInitials() string
 		GetDOB() string
 	}
+	RandomNumberGenerator interface {
+		GetRandomNumbers(len int) string
+	}
 	DrivingLiscenceNumberGenerator struct {
 		l Logger
+		r RandomNumberGenerator
 	}
 	Logger interface {
 		LogStuff(v string)
 	}
 )
 
-func NewDrivingLiscenceNumberGenerator(l Logger) *DrivingLiscenceNumberGenerator {
-	return &DrivingLiscenceNumberGenerator{l: l}
+func NewDrivingLiscenceNumberGenerator(l Logger, r RandomNumberGenerator) *DrivingLiscenceNumberGenerator {
+	return &DrivingLiscenceNumberGenerator{l: l, r: r}
 }
 
 func (g *DrivingLiscenceNumberGenerator) Generate(dlh DrivingLiscenceApplicants) (string, error) {
@@ -34,6 +38,7 @@ func (g *DrivingLiscenceNumberGenerator) Generate(dlh DrivingLiscenceApplicants)
 		g.l.LogStuff("Underaged Applicant, you must be 18 to hold liscence")
 		return "", errors.New("Underaged Applicant, you must be 18 to hold liscence")
 	}
-
-	return fmt.Sprintf("%s%s", dlh.GetInitials(), dlh.GetDOB()), nil
+	n := fmt.Sprintf("%s%s", dlh.GetInitials(), dlh.GetDOB())
+	num := 16 - len(n)
+	return fmt.Sprintf("%s%s", n, g.r.GetRandomNumbers(num)), nil
 }
