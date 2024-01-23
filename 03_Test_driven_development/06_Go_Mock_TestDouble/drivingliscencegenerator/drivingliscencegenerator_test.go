@@ -70,10 +70,13 @@ func (s *DrivingLiscenceSuite) TestLiscenceGenerator() {
 
 }
 func (s *DrivingLiscenceSuite) TestLiscenceGeneratorShorterInitials() {
-	a := ValidApplicant{initials: "JH", dob: "07051997"}
-	l := &SpyLogger{}
-	//r := FakeRand{}
-	lg := NewDrivingLiscenceNumberGenerator(l, r)
+	a.EXPECT().HoldsLiscence().Return(false)
+	a.EXPECT().IsAbove18().Return(true)
+	a.EXPECT().GetInitials().Return("JH")
+	a.EXPECT().GetDOB().Return("07051997")
+
+	r.EXPECT().GetRandomNumbers(gomock.Any()).Return("000000")
+
 	ln, err := lg.Generate(a)
 
 	s.NoError(err)
